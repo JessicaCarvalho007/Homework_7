@@ -14,10 +14,12 @@ import hf_hydrodata
 from forecast_functions import (
     get_training_test_data,
     fit_longterm_avg_model,
+    make_5day_forecast_longterm,
+    fit_monthly_avg_model,
+    make_5day_forecast_monthly,
     compute_metrics,
     plot_validation,
     save_model,
-    load_model,
 )
 
 parser = argparse.ArgumentParser()
@@ -29,7 +31,7 @@ parser.add_argument('--train-start', default='1990-01-01')
 parser.add_argument('--train-end',   default='2022-12-31')
 parser.add_argument('--test-start',  default='2023-01-01')
 parser.add_argument('--test-end',    default='2024-12-31')
-parser.add_argument('--model',       default='longterm_avg', choices=['longterm_avg'])
+parser.add_argument('--model', default='longterm_avg', choices=['longterm_avg', 'monthly_avg'])
 parser.add_argument('--refit',       default='True')
 parser.add_argument('--validate',    default='True')
 args = parser.parse_args()
@@ -78,5 +80,41 @@ if args.model == 'longterm_avg':
             forecast_series, metrics, 'Long-term Average',
             train_forecast_cfs=train_fitted
         )
+elif args.model == 'monthly_avg':
+    print("\n--- Step 2: Fit monthly average model ---")
+    monthly_means = fit_monthly_avg_model(train)
 
+    if args.refit == 'True':
+        save_model(monthly_means)
+
+    model_label = 'Monthly Average'
+
+    if args.validate == 'True':
+        print("\n--- Step 3: Validate monthly average model ---")
+
+        train_fitted = pd.Series(
+            [monthly_means[d.month] for d in train.index],
+            index=train.index
+        )
+
+        forecast_series = pd.Series(
+            [monthly_means[d.month] for d in test.index],
+            index=test.index
+        )
+
+        metrics = compute_metrics(test['streamflow_cfs'], forecast_series)
+
+        print("\nValidation metrics:")
+        for key, value in metrics.items():
+            print(f"  {key}: {value:.3f}")
+
+        plot_validation(
+            train['streamflow_cfs'],
+            test['streamflow_cfs'],
+            forecast_series,
+            metrics,
+            model_label,
+            train_forecast_cfs=train_fitted
+        )
+        
 print("\nTraining complete.")

@@ -14,6 +14,7 @@ import hf_hydrodata
 from forecast_functions import (
     get_recent_data,
     make_5day_forecast_longterm,
+    make_5day_forecast_monthly,
     load_model,
 )
 
@@ -23,7 +24,7 @@ parser.add_argument('--pin',           required=True)
 parser.add_argument('--gauge-id',      default='09506000')
 parser.add_argument('--ar-order',      type=int, default=7)
 parser.add_argument('--forecast-date', default='2024-04-30')
-parser.add_argument('--model',         default='longterm_avg', choices=['longterm_avg'])
+parser.add_argument('--model', default='longterm_avg', choices=['longterm_avg', 'monthly_avg'])
 args = parser.parse_args()
 
 forecast_date_ts = pd.Timestamp(args.forecast_date)
@@ -46,6 +47,21 @@ if args.model == 'longterm_avg':
     forecast_df = make_5day_forecast_longterm(mean_flow, args.forecast_date)
     model_label = 'Long-term Average'
 
+elif args.model == 'monthly_avg':
+    print("\n--- Step 2: Load monthly average model ---")
+    monthly_means = load_model()
+
+    if not isinstance(monthly_means, dict):
+        raise TypeError(
+            "saved_model.pkl does not contain a monthly_avg model. "
+            "Re-run train_model.py with --refit True --model monthly_avg first."
+        )
+
+    print("\n--- Step 3: Generate 5-day monthly average forecast ---")
+    forecast_df = make_5day_forecast_monthly(monthly_means, args.forecast_date)
+    model_label = 'Monthly Average'
+
+    
 print(f"\n  5-Day Streamflow Forecast — Verde River ({model_label})")
 print(f"  Starting: {forecast_date_ts.date()}\n")
 print(f"  {'Date':<14}  Forecast (cfs)")
