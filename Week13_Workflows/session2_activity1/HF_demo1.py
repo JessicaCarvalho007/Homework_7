@@ -31,8 +31,34 @@ import hf_hydrodata as hf          # HydroFrame data access package
 # Replace the placeholders below with your actual credentials.
 # WARNING: never share your PIN or push it to a public repository!
 
-HYDROFRAME_EMAIL = "your_email@example.com"   # <-- replace with your email
-HYDROFRAME_PIN   = "your_pin_here"            # <-- replace with your PIN
+"""
+working directory:
+cd /workspaces/Homework_7/Week13_Workflows/session2_activity1
+
+run python script:
+python script.py
+"""
+
+def get_hydroframe_login():
+    while True:
+        try:
+            email = input("What is your HydroFrame username/email: ").strip()
+            pin = input("What is your HydroFrame PIN number: ").strip()
+
+            if "@" not in email:
+                raise ValueError("Your HydroFrame email should include an '@' symbol.")
+
+            if not pin.isdigit():
+                raise ValueError("Your HydroFrame PIN should contain numbers only.")
+
+            return email, pin
+
+        except ValueError as error:
+            print(f"\nInput error: {error}")
+            print("Please try again.\n")
+
+
+HYDROFRAME_EMAIL, HYDROFRAME_PIN = get_hydroframe_login()
 
 hf.register_api_pin(email=HYDROFRAME_EMAIL, pin=HYDROFRAME_PIN)
 print("Authentication successful.")

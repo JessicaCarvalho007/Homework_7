@@ -1,0 +1,12 @@
+name: hw7_forecast
+channels:
+  - conda-forge
+dependencies:
+  - pandas
+  - pip
+  - ipykernel
+  - matplotlib
+  - jupyter
+  - python=3.11
+  - numpy
+prefix: /opt/conda/envs/hw7_forecast
