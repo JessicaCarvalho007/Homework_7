@@ -7,7 +7,6 @@ test period. Run via run_workflow.sh, or directly:
     python train_model.py --email YOU@EMAIL.COM --pin 1234 [--other-options]
 """
 
-import os
 import argparse
 import pandas as pd
 import hf_hydrodata
@@ -18,7 +17,8 @@ from forecast_functions import (
     compute_metrics,
     plot_validation,
     save_model,
-    load_model
+    load_model,
+    get_model_file,
 )
 
 parser = argparse.ArgumentParser()
@@ -46,12 +46,14 @@ train, test = get_training_test_data(args.gauge_id, args.train_start, args.train
 # ── Long-term average model ───────────────────────────────────────────────────
 if args.model == 'longterm_avg':
     print("\n--- Step 2: Fit long-term average model ---")
-    if REFIT_MODEL or not os.path.exists('saved_model.pkl'):
+    model_file = get_model_file(args.model)
+
+    if REFIT_MODEL or not model_file.exists():
         mean_flow = fit_longterm_avg_model(train)
-        print(f"  Long-term mean: {mean_flow:.2f} cfs")
-        save_model(mean_flow)
+        print(f" Long-term mean: {mean_flow:.2f} cfs")
+        save_model(mean_flow, args.model)
     else:
-        mean_flow = load_model()
+        mean_flow = load_model(args.model)
         if not isinstance(mean_flow, float):
             raise TypeError(
                 "saved_model.pkl does not contain a longterm_avg model. "
@@ -70,22 +72,38 @@ if args.model == 'longterm_avg':
         print("\n  NSE guide: >0.75 very good | 0.65–0.75 good | "
               "0.50–0.65 satisfactory | <0.50 poor")
 
-        print("\n  Generating validation plot ...")
         plot_validation(
-            train['streamflow_cfs'], test['streamflow_cfs'],
-            forecast_series, metrics, 'Long-term Average',
-            train_forecast_cfs=train_fitted
+            train['streamflow_cfs'],
+            test['streamflow_cfs'],
+            forecast_series,
+            metrics,
+            'Long-term Average',
+            train_forecast_cfs=train_fitted,
+            save_path=f"{args.model}_validation_plot.png"
         )
-elif args.model == 'monthly_avg':
-    print("\n--- Step 2: Fit monthly average model ---")
-    monthly_means = fit_monthly_avg_model(train)
 
-    if args.refit == 'True':
-        save_model(monthly_means)
+elif args.model == 'monthly_avg':
+
+    print("\n--- Step 2: Fit/load monthly average model ---")
+
+    model_file = get_model_file(args.model)
+
+    if REFIT_MODEL or not model_file.exists():
+        monthly_means = fit_monthly_avg_model(train)
+        save_model(monthly_means, args.model)
+    else:
+        monthly_means = load_model(args.model)
+
+    if not isinstance(monthly_means, dict):
+        raise TypeError(
+            f"{model_file} does not contain a monthly_avg model. "
+            "Re-run with --refit True --model monthly_avg to train one."
+        )
 
     model_label = 'Monthly Average'
 
-    if args.validate == 'True':
+    if RUN_VALIDATION:
+
         print("\n--- Step 3: Validate monthly average model ---")
 
         train_fitted = pd.Series(
@@ -102,7 +120,7 @@ elif args.model == 'monthly_avg':
 
         print("\nValidation metrics:")
         for key, value in metrics.items():
-            print(f"  {key}: {value:.3f}")
+            print(f" {key}: {value:.3f}")
 
         plot_validation(
             train['streamflow_cfs'],
@@ -110,7 +128,8 @@ elif args.model == 'monthly_avg':
             forecast_series,
             metrics,
             model_label,
-            train_forecast_cfs=train_fitted
+            train_forecast_cfs=train_fitted,
+            save_path=f"{args.model}_validation_plot.png"
         )
-        
+
 print("\nTraining complete.")

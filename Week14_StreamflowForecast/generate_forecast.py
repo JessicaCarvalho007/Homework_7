@@ -16,6 +16,7 @@ from forecast_functions import (
     make_5day_forecast_longterm,
     make_5day_forecast_monthly,
     load_model,
+    get_figure_file,
 )
 
 parser = argparse.ArgumentParser()
@@ -37,7 +38,7 @@ recent = get_recent_data(args.gauge_id, args.forecast_date, args.ar_order)
 # ── Long-term average model ────────────────────────────────────────────────────
 if args.model == 'longterm_avg':
     print("\n--- Step 2: Load long-term average model ---")
-    mean_flow = load_model()
+    mean_flow = load_model(args.model)
     if not isinstance(mean_flow, float):
         raise TypeError(
             "saved_model.pkl does not contain a longterm_avg model. "
@@ -49,7 +50,7 @@ if args.model == 'longterm_avg':
 
 elif args.model == 'monthly_avg':
     print("\n--- Step 2: Load monthly average model ---")
-    monthly_means = load_model()
+    monthly_means = load_model(args.model)
 
     if not isinstance(monthly_means, dict):
         raise TypeError(
@@ -71,6 +72,7 @@ for date, row in forecast_df.iterrows():
 
 recent_cfs = recent['streamflow_cfs'].iloc[-30:]
 
+forecast_plot_file = get_figure_file(f"{args.model}_forecast_plot.png")
 
 #=== CREATE PLOT ===
 fig, ax = plt.subplots(figsize=(10, 4))
@@ -82,6 +84,6 @@ ax.set_ylabel('Streamflow (cfs)')
 ax.set_title(f'Verde River 5-Day Forecast  |  Starting {forecast_date_ts.date()}  ({model_label})')
 ax.legend()
 plt.tight_layout()
-plt.savefig(f'{args.model} forecast_plot.png', dpi=150, bbox_inches='tight')
-print("  Plot saved to forecast_plot.png")
+plt.savefig(forecast_plot_file, dpi=150, bbox_inches='tight')
+print(f" Plot saved to {forecast_plot_file}")
 plt.show()

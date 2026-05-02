@@ -7,9 +7,19 @@ Helper functions shared by train_model.py and generate_forecast.py.
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 import pickle
 import hf_hydrodata
 
+### Project folders ###
+# Folder where this script lives:
+BASE_DIR = Path(__file__).resolve().parent
+# Output folders:
+MODEL_PATH = BASE_DIR / "models"
+FIG_PATH = BASE_DIR / "figures"
+# Create folders automatically if they do not already exist:
+MODEL_PATH.mkdir(parents=True, exist_ok=True)
+FIG_PATH.mkdir(parents=True, exist_ok=True)
 
 def get_training_test_data(gauge_id, train_start, train_end, test_start, test_end):
     """
@@ -109,7 +119,7 @@ def compute_metrics(observed_cfs, predicted_cfs):
     return {'RMSE (cfs)': rmse, 'R2': r2, 'NSE': nse}
 
 
-def plot_validation(train_cfs, test_cfs, forecast_cfs, metrics, model_label, train_forecast_cfs=None, save_path='validation_plot.png'):
+def plot_validation(train_cfs, test_cfs, forecast_cfs, metrics, model_label, train_forecast_cfs=None, save_path=None):
     fig, axes = plt.subplots(2, 1, figsize=(12, 9))
 
     axes[0].plot(train_cfs.index, train_cfs.values, color='steelblue', linewidth=0.6, alpha=0.7, label='Training')
@@ -147,21 +157,87 @@ def plot_validation(train_cfs, test_cfs, forecast_cfs, metrics, model_label, tra
     )
     axes[1].legend()
     plt.tight_layout()
-    plt.savefig(f'{model_label}_{save_path}', dpi=150, bbox_inches='tight')
-    print(f"  Plot saved to {save_path}")
+    # Save validation plot to the figures folder
+    if save_path is None:
+        figure_file = get_figure_file("validation_plot.png")
+    else:
+        figure_file = Path(save_path)
+
+        # If user gives only a filename, save it inside FIG_PATH
+        if not figure_file.is_absolute():
+            figure_file = get_figure_file(figure_file.name)
+
+    plt.savefig(figure_file, dpi=150, bbox_inches='tight')
+    print(f" Plot saved to {figure_file}")
     plt.show()
 
 
-def save_model(model, path='saved_model.pkl'):
-    with open(path, 'wb') as f:
+def get_model_file(model_name):
+    """
+    Return the full path for a saved model file.
+
+    Example:
+    model_name = 'monthly_avg'
+    returns: models/monthly_avg_model.pkl
+    """
+    return MODEL_PATH / f"{model_name}_model.pkl"
+
+
+def get_figure_file(filename):
+    """
+    Return the full path for a figure file inside the figures folder.
+
+    Example:
+    filename = 'monthly_avg_forecast_plot.png'
+    returns: figures/monthly_avg_forecast_plot.png
+    """
+    return FIG_PATH / filename
+
+
+def save_model(model, model_name):
+    """
+    Save a fitted model object to the models folder.
+
+    Parameters
+    ----------
+    model : object
+        The fitted model or model information to save.
+        Examples: float, dict, sklearn model object.
+    model_name : str
+        Name of the model, such as 'longterm_avg', 'monthly_avg',
+        or 'weekly_regression'.
+    """
+    model_file = get_model_file(model_name)
+
+    with open(model_file, 'wb') as f:
         pickle.dump(model, f)
-    print(f"  Model saved to {path}")
+
+    print(f" Model saved to {model_file}")
+    return model_file
 
 
-def load_model(path='saved_model.pkl'):
-    with open(path, 'rb') as f:
+def load_model(model_name):
+    """
+    Load a fitted model object from the models folder.
+
+    Parameters
+    ----------
+    model_name : str
+        Name of the model, such as 'longterm_avg', 'monthly_avg',
+        or 'weekly_regression'.
+    """
+    model_file = get_model_file(model_name)
+
+    if not model_file.exists():
+        raise FileNotFoundError(
+            f"No saved model found at {model_file}. "
+            f"Re-run the workflow with --refit True --model {model_name}."
+        )
+
+    with open(model_file, 'rb') as f:
         model = pickle.load(f)
-    print(f"  Model loaded from {path}")
+
+    print(f" Model loaded from {model_file}")
     return model
 
 
