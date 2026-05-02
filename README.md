@@ -9,6 +9,8 @@ The workflow downloads daily streamflow data, optionally trains and validates a 
 ```text
 Homework_7/
 ├── README.md
+├── images/
+│   └── activity3_workflow_diagram.png
 ├── activities.md
 ├── environment.yml
 └── Week14_StreamflowForecast/
@@ -208,6 +210,12 @@ The workflow is controlled by `run_workflow.sh`.
 6. `generate_forecast.py` downloads recent streamflow data, loads the selected saved model, and creates a 5-day forecast.
 7. Model files are saved to `models/`.
 8. Plot files are saved to `figures/`.
+
+## Workflow Diagram
+
+<p align="center">
+  <img src="images/activity3_workflow_diagram.png" alt="Activity 3 Workflow Diagram" width="1000">
+</p>
 
 ## Changes and improvements I made
 
