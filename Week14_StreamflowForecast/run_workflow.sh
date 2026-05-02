@@ -18,9 +18,9 @@ TEST_START="2023-01-01"
 TEST_END="2024-12-31"
 
 FORECAST_DATE="2024-04-30"   # First day of the 5-day forecast (YYYY-MM-DD)
-REFIT_MODEL="True"           # True = re-fit from scratch | False = use saved_model.pkl
-RUN_VALIDATION="True"        # True = show validation plots and metrics
-MODEL="longterm_avg"          # NOTE: options: longterm_avg, monthly_avg, weekly_regression
+REFIT_MODEL="True"
+RUN_VALIDATION="True"
+MODEL="monthly_avg"
 
 
 # =============================================================================
