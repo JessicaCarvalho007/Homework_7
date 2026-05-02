@@ -9,18 +9,18 @@
 # USER OPTIONS — edit these before running
 # =============================================================================
 
-GAUGE_ID="09506000"   # USGS gauge ID (Verde River near Camp Verde, AZ)
-AR_ORDER=7            # Number of lag days for the AR model
+GAUGE_ID="09506000"             # USGS gauge ID (Verde River near Camp Verde, AZ)
+AR_ORDER=7                      # Number of lag days for the AR model
 
 TRAIN_START="1990-01-01"
 TRAIN_END="2022-12-31"
 TEST_START="2023-01-01"
 TEST_END="2024-12-31"
 
-FORECAST_DATE="2024-04-30"   # First day of the 5-day forecast (YYYY-MM-DD)
+FORECAST_DATE="2024-04-30"      # First day of the 5-day forecast (YYYY-MM-DD)
 REFIT_MODEL="True"
 RUN_VALIDATION="True"
-MODEL="monthly_avg"
+MODEL="weekly_regression"
 
 
 # =============================================================================

@@ -15,6 +15,7 @@ from forecast_functions import (
     get_recent_data,
     make_5day_forecast_longterm,
     make_5day_forecast_monthly,
+    make_5day_forecast_weekly,
     load_model,
     get_figure_file,
 )
@@ -61,6 +62,29 @@ elif args.model == 'monthly_avg':
     print("\n--- Step 3: Generate 5-day monthly average forecast ---")
     forecast_df = make_5day_forecast_monthly(monthly_means, args.forecast_date)
     model_label = 'Monthly Average'
+    
+elif args.model == 'weekly_regression':
+
+    print("\n--- Step 2: Load weekly regression model ---")
+
+    weekly_model = load_model(args.model)
+
+    if not isinstance(weekly_model, dict) or weekly_model.get('model_type') != 'weekly_regression':
+        raise TypeError(
+            "The saved model file does not contain a weekly_regression model. "
+            "Re-run train_model.py with --refit True --model weekly_regression first."
+        )
+
+    print("\n--- Step 3: Generate 5-day weekly regression forecast ---")
+
+    forecast_df = make_5day_forecast_weekly(
+        weekly_model,
+        recent,
+        args.forecast_date,
+        n_days=5
+    )
+
+    model_label = f"Weekly Regression ({weekly_model['ar_order']}-day lag)"
 
     
 print(f"\n  5-Day Streamflow Forecast — Verde River ({model_label})")

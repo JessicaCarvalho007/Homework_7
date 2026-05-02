@@ -14,6 +14,8 @@ from forecast_functions import (
     get_training_test_data,
     fit_monthly_avg_model,
     fit_longterm_avg_model,
+    fit_weekly_regression_model,
+    make_weekly_regression_predictions,
     compute_metrics,
     plot_validation,
     save_model,
@@ -121,6 +123,76 @@ elif args.model == 'monthly_avg':
         print("\nValidation metrics:")
         for key, value in metrics.items():
             print(f" {key}: {value:.3f}")
+
+        plot_validation(
+            train['streamflow_cfs'],
+            test['streamflow_cfs'],
+            forecast_series,
+            metrics,
+            model_label,
+            train_forecast_cfs=train_fitted,
+            save_path=f"{args.model}_validation_plot.png"
+        )
+        
+elif args.model == 'weekly_regression':
+
+    print("\n--- Step 2: Fit/load weekly regression model ---")
+
+    model_file = get_model_file(args.model)
+
+    if REFIT_MODEL or not model_file.exists():
+        weekly_model = fit_weekly_regression_model(train, ar_order=args.ar_order)
+
+        print(
+            f" Weekly regression model fit using "
+            f"{weekly_model['training_rows']:,} training rows."
+        )
+        print(f" Lag window: {weekly_model['ar_order']} days")
+
+        save_model(weekly_model, args.model)
+
+    else:
+        weekly_model = load_model(args.model)
+
+    if not isinstance(weekly_model, dict) or weekly_model.get('model_type') != 'weekly_regression':
+        raise TypeError(
+            f"{model_file} does not contain a weekly_regression model. "
+            "Re-run with --refit True --model weekly_regression to train one."
+        )
+
+    model_label = f"Weekly Regression ({weekly_model['ar_order']}-day lag)"
+
+    if RUN_VALIDATION:
+
+        print("\n--- Step 3: Validate weekly regression model ---")
+
+        # Combine train and test so the first test-day prediction can use
+        # lagged streamflow values from the end of the training period.
+        combined = pd.concat([train, test]).sort_index()
+
+        all_predictions = make_weekly_regression_predictions(weekly_model, combined)
+
+        train_fitted = all_predictions.loc[train.index]
+        forecast_series = all_predictions.loc[test.index]
+
+        valid = forecast_series.notna() & test['streamflow_cfs'].notna()
+
+        if valid.sum() == 0:
+            raise ValueError("No valid weekly regression predictions were available for validation.")
+
+        metrics = compute_metrics(
+            test.loc[valid, 'streamflow_cfs'],
+            forecast_series.loc[valid]
+        )
+
+        print("\nValidation metrics:")
+        for key, value in metrics.items():
+            print(f" {key}: {value:.3f}")
+
+        print(
+            "\nNSE guide: >0.75 very good | 0.65–0.75 good | "
+            "0.50–0.65 satisfactory | <0.50 poor"
+        )
 
         plot_validation(
             train['streamflow_cfs'],

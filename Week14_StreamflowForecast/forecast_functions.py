@@ -262,3 +262,142 @@ def make_5day_forecast_monthly(monthly_means, forecast_date, n_days=5):
     return pd.DataFrame({'Forecast_cfs': forecasts}, index=dates)
 
 
+def _add_lag_columns(df, ar_order):
+    """
+    Add lagged log-flow columns to a streamflow DataFrame.
+
+    For ar_order = 7, this creates:
+    log_flow_lag_1, log_flow_lag_2, ..., log_flow_lag_7
+
+    log_flow_lag_1 is yesterday's log-flow.
+    log_flow_lag_7 is the log-flow from 7 days ago.
+    """
+    lagged = df.copy()
+
+    for lag in range(1, ar_order + 1):
+        lagged[f'log_flow_lag_{lag}'] = lagged['log_flow'].shift(lag)
+
+    return lagged
+
+
+def fit_weekly_regression_model(train_df, ar_order=7):
+    """
+    Fit a simple weekly lag regression model.
+
+    The model predicts today's log-flow using the previous ar_order days
+    of log-flow values.
+
+    For the default ar_order = 7:
+
+        log(Q_t + 1) = b0
+                       + b1 log(Q_{t-1} + 1)
+                       + b2 log(Q_{t-2} + 1)
+                       + ...
+                       + b7 log(Q_{t-7} + 1)
+
+    Parameters
+    ----------
+    train_df : pandas.DataFrame
+        Training data with columns streamflow_cfs and log_flow.
+
+    ar_order : int
+        Number of previous days used as predictors.
+
+    Returns
+    -------
+    dict
+        Dictionary containing the fitted regression information.
+    """
+    lag_cols = [f'log_flow_lag_{lag}' for lag in range(1, ar_order + 1)]
+
+    model_df = _add_lag_columns(train_df, ar_order)
+    model_df = model_df.dropna(subset=['log_flow'] + lag_cols)
+
+    if len(model_df) == 0:
+        raise ValueError(
+            f"Not enough training data to fit weekly regression with ar_order={ar_order}."
+        )
+
+    y = model_df['log_flow'].values
+    X = model_df[lag_cols].values
+
+    # Add intercept column
+    X_design = np.column_stack([np.ones(len(X)), X])
+
+    # Least-squares regression using NumPy
+    beta, residuals, rank, singular_values = np.linalg.lstsq(X_design, y, rcond=None)
+
+    model = {
+        'model_type': 'weekly_regression',
+        'ar_order': ar_order,
+        'intercept': float(beta[0]),
+        'coefficients': beta[1:].tolist(),
+        'feature_names': lag_cols,
+        'training_rows': int(len(model_df))
+    }
+
+    return model
+
+
+def make_weekly_regression_predictions(model, df):
+    """
+    Make one-day-ahead predictions for every day in a DataFrame.
+
+    This is useful for validation because each prediction uses the previous
+    observed streamflow values.
+    """
+    ar_order = int(model['ar_order'])
+    intercept = float(model['intercept'])
+    coefficients = np.array(model['coefficients'], dtype=float)
+
+    lag_cols = [f'log_flow_lag_{lag}' for lag in range(1, ar_order + 1)]
+
+    model_df = _add_lag_columns(df, ar_order)
+    X = model_df[lag_cols].values
+
+    pred_log_flow = intercept + X @ coefficients
+    pred_cfs = np.maximum(np.expm1(pred_log_flow), 0)
+
+    return pd.Series(pred_cfs, index=model_df.index, name='Forecast_cfs')
+
+
+def make_5day_forecast_weekly(model, recent_df, forecast_date, n_days=5):
+    """
+    Generate a recursive 5-day forecast using the weekly regression model.
+
+    Day 1 uses the most recent observed streamflow values.
+    Day 2 uses the Day 1 forecast as part of its lag history.
+    Day 3 uses Days 1 and 2 forecasts, and so on.
+    """
+    ar_order = int(model['ar_order'])
+    intercept = float(model['intercept'])
+    coefficients = np.array(model['coefficients'], dtype=float)
+
+    log_history = recent_df['log_flow'].dropna().tolist()
+
+    if len(log_history) < ar_order:
+        raise ValueError(
+            f"Need at least {ar_order} recent observations for weekly_regression, "
+            f"but only found {len(log_history)}."
+        )
+
+    dates = pd.date_range(start=forecast_date, periods=n_days, freq='D')
+    forecasts = []
+
+    for date in dates:
+        # Features are ordered as lag 1, lag 2, ..., lag ar_order
+        lag_values = np.array(
+            [log_history[-lag] for lag in range(1, ar_order + 1)],
+            dtype=float
+        )
+
+        pred_log_flow = intercept + lag_values @ coefficients
+        pred_cfs = max(np.expm1(pred_log_flow), 0)
+
+        forecasts.append(pred_cfs)
+
+        # Add forecast back into history for recursive multi-day prediction
+        log_history.append(np.log(pred_cfs + 1))
+
+    return pd.DataFrame({'Forecast_cfs': forecasts}, index=dates)
+
