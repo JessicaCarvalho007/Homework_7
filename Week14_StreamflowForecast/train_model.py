@@ -13,13 +13,12 @@ import pandas as pd
 import hf_hydrodata
 from forecast_functions import (
     get_training_test_data,
-    fit_longterm_avg_model,
-    make_5day_forecast_longterm,
     fit_monthly_avg_model,
-    make_5day_forecast_monthly,
+    fit_longterm_avg_model,
     compute_metrics,
     plot_validation,
     save_model,
+    load_model
 )
 
 parser = argparse.ArgumentParser()
@@ -31,7 +30,7 @@ parser.add_argument('--train-start', default='1990-01-01')
 parser.add_argument('--train-end',   default='2022-12-31')
 parser.add_argument('--test-start',  default='2023-01-01')
 parser.add_argument('--test-end',    default='2024-12-31')
-parser.add_argument('--model', default='longterm_avg', choices=['longterm_avg', 'monthly_avg'])
+parser.add_argument('--model', default='longterm_avg', choices=['longterm_avg', 'monthly_avg', 'Weekly_regression'])
 parser.add_argument('--refit',       default='True')
 parser.add_argument('--validate',    default='True')
 args = parser.parse_args()
@@ -42,10 +41,7 @@ RUN_VALIDATION = args.validate.lower() == 'true'
 hf_hydrodata.register_api_pin(email=args.email, pin=args.pin)
 
 print("\n--- Step 1: Download streamflow data ---")
-train, test = get_training_test_data(
-    args.gauge_id, args.train_start, args.train_end,
-    args.test_start, args.test_end
-)
+train, test = get_training_test_data(args.gauge_id, args.train_start, args.train_end, args.test_start, args.test_end)
 
 # ── Long-term average model ───────────────────────────────────────────────────
 if args.model == 'longterm_avg':

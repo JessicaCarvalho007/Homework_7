@@ -48,12 +48,13 @@ def get_recent_data(gauge_id, forecast_date, ar_order):
 
     # Cheap metadata call to validate forecast_date without downloading the full record
     meta = hf_hydrodata.get_point_metadata(
-        dataset="usgs_nwis",
-        variable="streamflow",
-        temporal_resolution="daily",
-        aggregation="mean",
-        site_ids=gauge_id
+                dataset="usgs_nwis",
+                variable="streamflow",
+                temporal_resolution="daily",
+                aggregation="mean",
+                site_ids=gauge_id
     )
+
     latest = pd.Timestamp(meta['last_date_data_available'].iloc[0])
     if forecast_ts > latest:
         raise ValueError(
@@ -67,14 +68,14 @@ def get_recent_data(gauge_id, forecast_date, ar_order):
     date_end   = (forecast_ts - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
 
     raw = hf_hydrodata.get_point_data(
-        dataset="usgs_nwis",
-        variable="streamflow",
-        temporal_resolution="daily",
-        aggregation="mean",
-        site_ids=gauge_id,
-        date_start=date_start,
-        date_end=date_end
-    )
+                dataset="usgs_nwis",
+                variable="streamflow",
+                temporal_resolution="daily",
+                aggregation="mean",
+                site_ids=gauge_id,
+                date_start=date_start,
+                date_end=date_end
+            )
     if 'date' in raw.columns:
         raw.index = pd.to_datetime(raw['date'])
     df = raw[[gauge_id]].rename(columns={gauge_id: 'streamflow_cfs'}).sort_index().dropna()
@@ -108,21 +109,15 @@ def compute_metrics(observed_cfs, predicted_cfs):
     return {'RMSE (cfs)': rmse, 'R2': r2, 'NSE': nse}
 
 
-def plot_validation(train_cfs, test_cfs, forecast_cfs, metrics, model_label,
-                    train_forecast_cfs=None, save_path='validation_plot.png'):
+def plot_validation(train_cfs, test_cfs, forecast_cfs, metrics, model_label, train_forecast_cfs=None, save_path='validation_plot.png'):
     fig, axes = plt.subplots(2, 1, figsize=(12, 9))
 
-    axes[0].plot(train_cfs.index, train_cfs.values,
-                 color='steelblue', linewidth=0.6, alpha=0.7, label='Training')
+    axes[0].plot(train_cfs.index, train_cfs.values, color='steelblue', linewidth=0.6, alpha=0.7, label='Training')
     if train_forecast_cfs is not None:
-        axes[0].plot(train_forecast_cfs.index, train_forecast_cfs.values,
-                     color='tomato', linewidth=0.8, linestyle='--', alpha=0.8,
-                     label=f'{model_label} Fitted (train)')
-    axes[0].plot(test_cfs.index, test_cfs.values,
-                 color='black', linewidth=1.0, label='Observed (test)')
-    axes[0].plot(forecast_cfs.index, forecast_cfs.values,
-                 color='tomato', linewidth=1.2, linestyle='--',
-                 label=f'{model_label} Predicted (test)')
+        axes[0].plot(train_forecast_cfs.index, train_forecast_cfs.values, color='tomato', linewidth=0.8, linestyle='--', alpha=0.8, label=f'{model_label} Fitted (train)')
+
+    axes[0].plot(test_cfs.index, test_cfs.values, color='black', linewidth=1.0, label='Observed (test)')
+    axes[0].plot(forecast_cfs.index, forecast_cfs.values, color='tomato', linewidth=1.2, linestyle='--', label=f'{model_label} Predicted (test)')
     axes[0].axvline(test_cfs.index[0], color='gray', linestyle=':', linewidth=1)
     axes[0].set_yscale('log')
     axes[0].set_ylabel('Streamflow (cfs)')
@@ -142,6 +137,7 @@ def plot_validation(train_cfs, test_cfs, forecast_cfs, metrics, model_label,
         axes[1].plot([lo, hi], [lo, hi], 'r--', linewidth=1.5, label='1:1 line')
         axes[1].set_xscale('log')
         axes[1].set_yscale('log')
+
     axes[1].set_xlabel('Observed Streamflow (cfs)')
     axes[1].set_ylabel('Predicted Streamflow (cfs)')
     axes[1].set_title(
@@ -151,7 +147,7 @@ def plot_validation(train_cfs, test_cfs, forecast_cfs, metrics, model_label,
     )
     axes[1].legend()
     plt.tight_layout()
-    plt.savefig(save_path, dpi=150, bbox_inches='tight')
+    plt.savefig(f'{model_label}_{save_path}', dpi=150, bbox_inches='tight')
     print(f"  Plot saved to {save_path}")
     plt.show()
 

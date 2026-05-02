@@ -24,7 +24,7 @@ parser.add_argument('--pin',           required=True)
 parser.add_argument('--gauge-id',      default='09506000')
 parser.add_argument('--ar-order',      type=int, default=7)
 parser.add_argument('--forecast-date', default='2024-04-30')
-parser.add_argument('--model', default='longterm_avg', choices=['longterm_avg', 'monthly_avg'])
+parser.add_argument('--model', default='longterm_avg', choices=['longterm_avg', 'monthly_avg', 'weekly_regression'])
 args = parser.parse_args()
 
 forecast_date_ts = pd.Timestamp(args.forecast_date)
@@ -71,17 +71,17 @@ for date, row in forecast_df.iterrows():
 
 recent_cfs = recent['streamflow_cfs'].iloc[-30:]
 
+
+#=== CREATE PLOT ===
 fig, ax = plt.subplots(figsize=(10, 4))
-ax.plot(recent_cfs.index, recent_cfs.values,
-        color='steelblue', linewidth=1.3, label='Recent Observed (30 days)')
-ax.plot(forecast_df.index, forecast_df['Forecast_cfs'],
-        'ro--', linewidth=1.5, markersize=6, label='5-Day Forecast')
+ax.plot(recent_cfs.index, recent_cfs.values, color='steelblue', linewidth=1.3, label='Recent Observed (30 days)')
+ax.plot(forecast_df.index, forecast_df['Forecast_cfs'], 'ro--', linewidth=1.5, markersize=6, label='5-Day Forecast')
 ax.axvline(forecast_date_ts, color='gray', linestyle=':', linewidth=1.2)
 ax.set_yscale('log')
 ax.set_ylabel('Streamflow (cfs)')
 ax.set_title(f'Verde River 5-Day Forecast  |  Starting {forecast_date_ts.date()}  ({model_label})')
 ax.legend()
 plt.tight_layout()
-plt.savefig('forecast_plot.png', dpi=150, bbox_inches='tight')
+plt.savefig(f'{args.model} forecast_plot.png', dpi=150, bbox_inches='tight')
 print("  Plot saved to forecast_plot.png")
 plt.show()
