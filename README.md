@@ -242,19 +242,3 @@ The workflow is controlled by `run_workflow.sh`.
 6. `generate_forecast.py` downloads recent streamflow data, loads the selected saved model, and creates a 5-day forecast.
 7. Model files are saved to `models/`.
 8. Plot files are saved to `figures/`.
-
-## **Changes and improvements I made**
-
-In addition to completing the class activity models, I made the following updates:
-
-1. Added a third model called `weekly_regression`.
-2. Added model-specific save files so each model has its own `.pkl` file.
-3. Added a `models/` folder for saved model outputs.
-4. Added a `figures/` folder for validation and forecast plots.
-5. Updated the workflow so plots are saved with model-specific filenames.
-6. Added forecast-date checking so the workflow warns the user if the selected forecast date is later than the latest available streamflow data.
-7. Tested the workflow with both refitting and loading existing saved models.
-
-## **AI-use note**
-
-I used AI to help plan and debug this workflow. AI helped me think through how to organize the model-saving folder, figure outputs, and the added weekly regression model. I reviewed and tested the code by running the workflow for the long-term average, monthly average, and weekly regression models.
