@@ -11,6 +11,7 @@ from pathlib import Path
 import pickle
 import hf_hydrodata
 
+
 ### Project folders ###
 # Folder where this script lives:
 BASE_DIR = Path(__file__).resolve().parent
@@ -20,6 +21,7 @@ FIG_PATH = BASE_DIR / "figures"
 # Create folders automatically if they do not already exist:
 MODEL_PATH.mkdir(parents=True, exist_ok=True)
 FIG_PATH.mkdir(parents=True, exist_ok=True)
+
 
 def get_training_test_data(gauge_id, train_start, train_end, test_start, test_end):
     """

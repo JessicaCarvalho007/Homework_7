@@ -1,10 +1,10 @@
-# Homework 7: Streamflow Forecasting Workflow
+# **Homework 7: Streamflow Forecasting Workflow**
 
 This repository contains my Homework 7 streamflow forecasting workflow for the Verde River near Camp Verde, Arizona using USGS gauge `09506000`.
 
 The workflow downloads daily streamflow data, optionally trains and validates a model, and generates a 5-day daily average streamflow forecast starting on a user-selected date.
 
-## Repository contents
+## **Repository contents**
 
 ```text
 Homework_7/
@@ -31,7 +31,33 @@ Homework_7/
         └── weekly_regression_forecast_plot.png
 ```
 
-## Environment setup
+## **Using this repo:**
+
+The main workflow is in:
+
+```text
+Week14_StreamflowForecast/run_workflow.sh
+```
+
+The main functions are in:
+
+```text
+Week14_StreamflowForecast/forecast_functions.py
+```
+
+The model training and validation script is:
+
+```text
+Week14_StreamflowForecast/train_model.py
+```
+
+The forecast-generation script is:
+
+```text
+Week14_StreamflowForecast/generate_forecast.py
+```
+
+## **Environment setup**
 
 This workflow uses Python, NumPy, pandas, matplotlib, Jupyter tools, and `hf_hydrodata`.
 
@@ -51,7 +77,7 @@ conda env create -f environment.yml
 conda activate hw7_forecast
 ```
 
-## Running the workflow
+## **Running the workflow**
 
 From the repository root, move into the workflow folder:
 
@@ -80,7 +106,7 @@ HydroFrame PIN:
 
 The PIN is hidden when typed into the terminal.
 
-## Main user options
+## **Main user options**
 
 The main workflow settings are located near the top of `run_workflow.sh`.
 
@@ -108,7 +134,7 @@ MODEL="weekly_regression"
 | `RUN_VALIDATION` | `True` prints validation metrics and saves a validation plot. |
 | `MODEL` | Model choice. Options are `longterm_avg`, `monthly_avg`, and `weekly_regression`. |
 
-## Model choices
+## **Model choices**
 
 This workflow includes three model options.
 
@@ -149,7 +175,7 @@ For the 5-day forecast, the model works recursively. Day 1 uses the most recent 
 
 This model is different from the two average models because it uses recent flow conditions rather than only historical averages.
 
-## Outputs
+## **Outputs**
 
 The workflow creates two main types of outputs: saved model files and figures.
 
@@ -180,7 +206,7 @@ figures/weekly_regression_forecast_plot.png
 
 The validation plots compare observed and predicted streamflow for the test period. The forecast plots show recent observed streamflow and the 5-day forecast.
 
-## Validation metrics
+## **Validation metrics**
 
 When `RUN_VALIDATION="True"`, the workflow prints model-fit metrics.
 
@@ -198,6 +224,12 @@ The script also prints this general NSE guide:
 
 The long-term average model may produce an undefined `R2` value because it predicts a constant value. This does not mean the workflow failed. It happens because a constant prediction series has no variance for the correlation calculation.
 
+## **Workflow Diagram**
+
+<p align="center">
+  <img src="images/activity3_workflow_diagram.png" alt="Activity 3 Workflow Diagram" width="1000">
+</p>
+
 ## Workflow summary
 
 The workflow is controlled by `run_workflow.sh`.
@@ -211,13 +243,7 @@ The workflow is controlled by `run_workflow.sh`.
 7. Model files are saved to `models/`.
 8. Plot files are saved to `figures/`.
 
-## Workflow Diagram
-
-<p align="center">
-  <img src="images/activity3_workflow_diagram.png" alt="Activity 3 Workflow Diagram" width="1000">
-</p>
-
-## Changes and improvements I made
+## **Changes and improvements I made**
 
 In addition to completing the class activity models, I made the following updates:
 
@@ -229,32 +255,6 @@ In addition to completing the class activity models, I made the following update
 6. Added forecast-date checking so the workflow warns the user if the selected forecast date is later than the latest available streamflow data.
 7. Tested the workflow with both refitting and loading existing saved models.
 
-## AI-use note
+## **AI-use note**
 
 I used AI to help plan and debug this workflow. AI helped me think through how to organize the model-saving folder, figure outputs, and the added weekly regression model. I reviewed and tested the code by running the workflow for the long-term average, monthly average, and weekly regression models.
-
-## Notes
-
-The main workflow is in:
-
-```text
-Week14_StreamflowForecast/run_workflow.sh
-```
-
-The main functions are in:
-
-```text
-Week14_StreamflowForecast/forecast_functions.py
-```
-
-The model training and validation script is:
-
-```text
-Week14_StreamflowForecast/train_model.py
-```
-
-The forecast-generation script is:
-
-```text
-Week14_StreamflowForecast/generate_forecast.py
-```
